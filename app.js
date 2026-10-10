@@ -27,3 +27,12 @@ $('reset').onclick=()=>{$('query').value='';$('ion').value='all';$('range').valu
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{page=b.dataset.page;document.querySelectorAll('[data-page]').forEach(t=>t.classList.toggle('active',t===b));$('breadcrumb').textContent=page==='saved'?'我的收藏':page==='library'?'化合物库':'质谱检索';$('page-title').innerHTML=page==='saved'?'收藏发现，延续探索<span>.</span>':page==='library'?'化合物库，灵感之源<span>.</span>':'探索谱图，发现分子<span>.</span>';$('results-title').firstChild.textContent=page==='saved'?'我的收藏 ':page==='library'?'化合物库 ':'检索结果 ';$('reset').click()});
 $('export').onclick=()=>{if(!results.length){notify('没有可导出的结果');return}const rows=['Name,Chinese name,Formula,CAS,Exact mass,Ionization,Data source',...results.map(c=>[c.name,c.cn,c.formula,c.cas,c.mass,c.ion,'Demo only'].join(','))];const url=URL.createObjectURL(new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='spectra-results.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notify(`已导出 ${results.length} 条示例记录`)};
 $('help').onclick=()=>notify('支持名称、分子式、CAS、精确质量及谱峰检索。当前数据为交互演示，不用于实验鉴定。');render();
+
+// Extra workspace interactions
+const compareIds=[];
+$('theme').onclick=()=>{document.body.classList.toggle('dark');localStorage.setItem('spectra-theme',document.body.classList.contains('dark')?'dark':'light');notify(document.body.classList.contains('dark')?'已切换到深色主题':'已切换到浅色主题')};
+if(localStorage.getItem('spectra-theme')==='dark')document.body.classList.add('dark');
+$('load-demo').onclick=()=>{document.querySelector('[data-mode="compound"]').click();$('query').value='';$('ion').value='all';$('range').value='all';search();notify('已加载 8 条演示谱图')};
+$('history').onclick=()=>{const h=JSON.parse(localStorage.getItem('spectra-history')||'[]');notify(h.length?`最近检索：${h.slice(-3).reverse().join(' · ')}`:'还没有检索记录')};
+$('compare').onclick=()=>{if(!results.length){notify('当前没有可对比结果');return}const picked=[selected,...results.filter(c=>c.id!==selected).slice(0,1).map(c=>c.id)];const names=picked.map(id=>compounds.find(c=>c.id===id)?.cn).join(' vs ');$('compare').innerHTML=`⇄ ${names} <span>2 / 2</span>`;notify(`已选择 ${names}，对比视图将在下一步展开`)};
+const originalSearch=search;search=function(){const q=$('query').value.trim();if(q){const h=JSON.parse(localStorage.getItem('spectra-history')||'[]');h.push(q);localStorage.setItem('spectra-history',JSON.stringify([...new Set(h)].slice(-12)))}return originalSearch()};
